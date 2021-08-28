@@ -3,13 +3,14 @@
       id="drawer"
       :class="[drawerPosition,drawerDisplay]"
       :style="drawerStyles">
-    <div class="content-slot h-full bg-opacity-60 bg-gray-500 rounded-l-lg">
-      <slot/>
+    <div class="content-slot h-full bg-opacity-60 rounded-l-lg border" v-theme>
       <slot name="content"/>
-      <div v-if="drawerSwitch" class="btns">
+      <slot/>
+
+      <div v-if="drawerSwitch" class="btns cursor-pointer">
         <div class="btn-display" @click="ondisplay">
-          <div class="bg-opacity-60 bg-gray-500" :class="['btn--icon']">
-            <i class="el-icon-d-arrow-left icon text-white" :style="iconRotation"/>
+          <div class="bg-opacity-60" :class="['btn--icon']" v-theme>
+            <i class="el-icon-d-arrow-left icon" :style="iconRotation" v-theme-text/>
           </div>
         </div>
       </div>
@@ -18,6 +19,8 @@
 </template>
 
 <script>
+import {mapActions} from "vuex";
+
 export default {
   name: "DrawerNew",
   props: {
@@ -32,7 +35,7 @@ export default {
      * 宽度
      */
     width: {
-      type: String,
+      type: [String, Number],
       default: '300px'
     },
     margin: {
@@ -108,15 +111,18 @@ export default {
       } else {
         _styles.top = this.top + 'px'
       }
-
-      _styles.width = this.getValue(this.width)
+      if (typeof this.width === 'number') {
+        _styles.width = this.width + 'px'
+      } else {
+        _styles.width = this.getValue(this.width)
+      }
 
       this.setMargin(_styles)
 
       return _styles
     },
     iconRotation() {
-      return this.left ?
+      return this.position==='left' ?
           {'transform': 'rotate(' + (this.b ? 0 : 180) + 'deg)'} :
           {'transform': 'rotate(' + (this.b ? 180 : 0) + 'deg)'}
     }
@@ -135,6 +141,7 @@ export default {
     })
   },
   methods: {
+    ...mapActions(['changeDrawer']),
     getUnitMatcher() {
       return /%|px|rem|em/i
     },
@@ -148,6 +155,22 @@ export default {
     },
     ondisplay() {
       this.b = !this.b;
+      let _number = parseInt(this.getValue(this.width))
+      if (this.position === 'left') {
+        this['changeDrawer']({
+          left: {
+            show: this.b,
+            width: !this.b ? 0 : _number
+          }
+        });
+      } else if (this.position === 'right') {
+        this['changeDrawer']({
+          right: {
+            show: this.b,
+            width: !this.b ? 0 : _number
+          }
+        });
+      }
     },
     marginMatcher() {
       return /x-|y-/i
@@ -181,7 +204,7 @@ export default {
   position: absolute;
 
   &.drawer-left {
-    @apply left-0 transform translate-x-full transition-all duration-200;
+    @apply left-0 transform -translate-x-full transition-all duration-200;
 
     &.show {
       @apply transform translate-x-0;
@@ -189,7 +212,7 @@ export default {
 
     .btns {
       left: 100%;
-
+      margin-left: 1px;
       .btn--icon {
         @apply rounded-r-2xl;
       }
@@ -205,7 +228,7 @@ export default {
 
     .btns {
       right: 100%;
-
+      margin-right: 1px;
       .btn--icon {
         @apply rounded-l-2xl;
       }
